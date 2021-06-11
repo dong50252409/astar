@@ -1,5 +1,5 @@
 {application, astar, [
-    {description, "AStar pathfinding for Erlang"},
+    {description, "high performance AStar pathfinding algorithm implement of Erlang"},
     {vsn, "0.1.0"},
     {registered, []},
     {applications, [
