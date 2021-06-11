@@ -116,19 +116,19 @@ do_search(_EndGrid, _NeighbourFun, _OpenGrids, _VisitedGrids, _MaxLimit) ->
 %% pairs_heap implement
 %%======================================
 new() ->
-    {undefined, undefined, []}.
+    {}.
 
 insert(K, V, Heap) ->
     do_merge({K, V, []}, Heap).
 
-take_min({undefined, undefined, []}) ->
+take_min({}) ->
     empty;
 take_min({_, V, SubHeaps}) ->
     {V, merge_pairs(SubHeaps)}.
 
-do_merge(Heap1, Heap2) when element(1, Heap2) =:= undefined ->
+do_merge(Heap1, {}) ->
     Heap1;
-do_merge(Heap1, Heap2) when element(1, Heap1) =:= undefined ->
+do_merge({}, Heap2) ->
     Heap2;
 do_merge({K1, V1, SubHeap1}, Heap2) when K1 < element(1, Heap2) ->
     {K1, V1, [Heap2 | SubHeap1]};
@@ -140,4 +140,4 @@ merge_pairs([SH1, SH2 | Rest]) ->
 merge_pairs([SubHeap]) ->
     SubHeap;
 merge_pairs([]) ->
-    {undefined, undefined, []}.
+    {}.
