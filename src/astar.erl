@@ -67,20 +67,15 @@ neighbour_fun(DirectionFun, HeuristicFun, ValidFun) ->
         Fun =
             fun({XOffset, YOffset}, {AccOpenGrids, AccVisitedGrids}) ->
                 NGrid = {X + XOffset, Y + YOffset},
-                case is_visited(NGrid, AccVisitedGrids) of
+                case is_unvisited(NGrid, AccVisitedGrids) andalso ValidFun(NGrid) of
                     true ->
-                        {AccOpenGrids, AccVisitedGrids};
+                        G1 = G + g(CGrid, NGrid),
+                        NewScore = G1 + HeuristicFun(NGrid),
+                        NewPath = [NGrid | Path],
+                        NewAccVisitedGrids = AccVisitedGrids#{NGrid => true},
+                        {push(NewScore, NGrid, G1, NewPath, AccOpenGrids), NewAccVisitedGrids};
                     false ->
-                        case ValidFun(NGrid) of
-                            true ->
-                                G1 = G + g(CGrid, NGrid),
-                                NewScore = G1 + HeuristicFun(NGrid),
-                                NewPath = [NGrid | Path],
-                                NewAccVisitedGrids = AccVisitedGrids#{NGrid => true},
-                                {push(NewScore, NGrid, G1, NewPath, AccOpenGrids), NewAccVisitedGrids};
-                            false ->
-                                {AccOpenGrids, AccVisitedGrids}
-                        end
+                        {AccOpenGrids, AccVisitedGrids}
                 end
             end,
         lists:foldl(Fun, {OpenGrids, VisitedGrids}, DirectionFun(Y))
@@ -93,12 +88,12 @@ g({_, Y}, {_, Y}) ->
 g(_, _) ->
     14.
 
-is_visited(Grid, VisitedGrids) ->
+is_unvisited(Grid, VisitedGrids) ->
     case VisitedGrids of
         #{Grid := _} ->
-            true;
+            false;
         _ ->
-            false
+            true
     end.
 
 push(Score, Grid, G, Path, OpenGrids) ->
