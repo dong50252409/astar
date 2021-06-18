@@ -39,10 +39,12 @@ heuristic_fun(6, {X1, Y1}) ->
         cube_distance(Cub1, Cub2)
     end;
 heuristic_fun(_, {X1, Y1}) ->
-    fun({X2, Y2}) -> erlang:abs(X1 - X2) + erlang:abs(Y1 - Y2) end.
+    fun({X2, Y2}) ->
+        erlang:abs(X1 - X2) + erlang:abs(Y1 - Y2) end.
 
 direction_fun(4) ->
-    fun(_) -> [{-1, 0}, {0, -1}, {1, 0}, {0, 1}] end;
+    fun(_) ->
+        [{-1, 0}, {0, -1}, {1, 0}, {0, 1}] end;
 direction_fun(6) ->
     fun
         (Y) when Y band 1 =:= 0 ->
@@ -51,7 +53,8 @@ direction_fun(6) ->
             [{-1, 0}, {-1, 1}, {0, 1}, {1, 0}, {0, -1}, {-1, -1}]
     end;
 direction_fun(8) ->
-    fun(_) -> [{-1, 0}, {-1, -1}, {0, -1}, {1, -1}, {1, 0}, {1, 1}, {0, 1}, {-1, 1}] end.
+    fun(_) ->
+        [{-1, 0}, {-1, -1}, {0, -1}, {1, -1}, {1, 0}, {1, 1}, {0, 1}, {-1, 1}] end.
 
 evenr_to_cube(Col, Row) ->
     X = Col - ((Row + (Row band 1)) bsr 1),
@@ -71,9 +74,8 @@ neighbour_fun(DirectionFun, HeuristicFun, ValidFun) ->
                     true ->
                         G1 = G + g(CGrid, NGrid),
                         NewScore = G1 + HeuristicFun(NGrid),
-                        NewPath = [NGrid | Path],
                         NewAccVisitedGrids = AccVisitedGrids#{NGrid => true},
-                        {push(NewScore, NGrid, G1, NewPath, AccOpenGrids), NewAccVisitedGrids};
+                        {push(NewScore, NGrid, G1, Path, AccOpenGrids), NewAccVisitedGrids};
                     false ->
                         {AccOpenGrids, AccVisitedGrids}
                 end
@@ -102,9 +104,9 @@ push(Score, Grid, G, Path, OpenGrids) ->
 do_search(EndGrid, NeighbourFun, OpenGrids, VisitedGrids, MaxLimit) when MaxLimit > 0 ->
     case take_min(OpenGrids) of
         {{EndGrid, _G, Path}, _NewOpenGrids} ->
-            {max, Path};
+            {max, erlang:tl(lists:reverse([EndGrid | Path]))};
         {{Grid, G, Path}, NewOpenGrids} ->
-            {OpenGrids2, NewVisitedGrids} = NeighbourFun(Grid, G, Path, NewOpenGrids, VisitedGrids),
+            {OpenGrids2, NewVisitedGrids} = NeighbourFun(Grid, G, [Grid | Path], NewOpenGrids, VisitedGrids),
             do_search(EndGrid, NeighbourFun, OpenGrids2, NewVisitedGrids, MaxLimit - 1);
         empty ->
             none
