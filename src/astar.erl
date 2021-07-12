@@ -23,11 +23,10 @@ search(StartGrid, EndGrid, ValidFun, Options) ->
     Direction = proplists:get_value(direction_type, Options, ?DIRECTION_TYPE),
     DirectionFun = direction_fun(Direction),
     HeuristicFun = heuristic_fun(Direction, StartGrid),
-    NeighbourFn = neighbour_fun(DirectionFun, HeuristicFun, ValidFun),
     OpenGrids = push(0, StartGrid, 0, [], new()),
     VisitedGrids = #{StartGrid => true},
     MaxLimit = proplists:get_value(max_limit, Options, ?MAX_LIMIT),
-    do_search(EndGrid, NeighbourFn, OpenGrids, VisitedGrids, MaxLimit).
+    do_search(EndGrid, ValidFun, OpenGrids, VisitedGrids, DirectionFun, HeuristicFun, MaxLimit).
 
 %%=====================================================
 %% Internal Function
@@ -65,23 +64,26 @@ evenr_to_cube(Col, Row) ->
 cube_distance({X1, Y1, Z1}, {X2, Y2, Z2}) ->
     erlang:max(erlang:abs(X1 - X2), erlang:max(erlang:abs(Y1 - Y2), erlang:abs(Z1 - Z2))).
 
-neighbour_fun(DirectionFun, HeuristicFun, ValidFun) ->
-    fun({X, Y} = CGrid, G, Path, OpenGrids, VisitedGrids) ->
-        Fun =
-            fun({XOffset, YOffset}, {AccOpenGrids, AccVisitedGrids}) ->
-                NGrid = {X + XOffset, Y + YOffset},
-                case is_unvisited(NGrid, AccVisitedGrids) andalso ValidFun(NGrid) of
-                    true ->
-                        G1 = G + g(CGrid, NGrid),
-                        NewScore = G1 + HeuristicFun(NGrid),
-                        NewAccVisitedGrids = AccVisitedGrids#{NGrid => true},
-                        {push(NewScore, NGrid, G1, Path, AccOpenGrids), NewAccVisitedGrids};
-                    false ->
-                        {AccOpenGrids, AccVisitedGrids}
-                end
-            end,
-        lists:foldl(Fun, {OpenGrids, VisitedGrids}, DirectionFun(Y))
-    end.
+get_neighbours(ValidFun, {X, Y} = CurGrid, VisitedGrids, [{DX, DY} | T]) ->
+    NGrid = {X + DX, Y + DY},
+    case is_unvisited(NGrid, VisitedGrids) andalso ValidFun(NGrid)
+        andalso (DX =:= 0 orelse DY =:= 0 orelse (ValidFun({X + DX, Y}) orelse ValidFun({X, Y + DY}))) of
+        true ->
+            [NGrid | get_neighbours(ValidFun, CurGrid, VisitedGrids, T)];
+        false ->
+            get_neighbours(ValidFun, CurGrid, VisitedGrids, T)
+    end;
+get_neighbours(_ValidFun, _CurGrid, _VisitedGrids, []) ->
+    [].
+
+add_neighbours(CurGrid, G, Path, OpenGrids, VisitedGrids, HeuristicFun, [NGrid | T]) ->
+    G1 = G + g(CurGrid, NGrid),
+    NewScore = G1 + HeuristicFun(NGrid),
+    OpenGrids1 = push(NewScore, NGrid, G1, Path, OpenGrids),
+    VisitedGrids1 = VisitedGrids#{NGrid => true},
+    add_neighbours(CurGrid, G, Path, OpenGrids1, VisitedGrids1, HeuristicFun, T);
+add_neighbours(_CurGrid, _G, _Path, OpenGrids, VisitedGrids, _HeuristicFun, []) ->
+    {OpenGrids, VisitedGrids}.
 
 g({X, _}, {X, _}) ->
     10;
@@ -101,17 +103,19 @@ is_unvisited(Grid, VisitedGrids) ->
 push(Score, Grid, G, Path, OpenGrids) ->
     insert(Score, {Grid, G, Path}, OpenGrids).
 
-do_search(EndGrid, NeighbourFun, OpenGrids, VisitedGrids, MaxLimit) when MaxLimit > 0 ->
+do_search(EndGrid, ValidFun, OpenGrids, VisitedGrids, DirectionFun, HeuristicFun, MaxLimit) when MaxLimit > 0 ->
     case take_min(OpenGrids) of
         {{EndGrid, _G, Path}, _NewOpenGrids} ->
             {max, erlang:tl(lists:reverse([EndGrid | Path]))};
         {{Grid, G, Path}, NewOpenGrids} ->
-            {OpenGrids2, NewVisitedGrids} = NeighbourFun(Grid, G, [Grid | Path], NewOpenGrids, VisitedGrids),
-            do_search(EndGrid, NeighbourFun, OpenGrids2, NewVisitedGrids, MaxLimit - 1);
+            Directions = DirectionFun(element(2, Grid)),
+            Neighbours = get_neighbours(ValidFun, Grid, VisitedGrids, Directions),
+            {OpenGrids2, NewVisitedGrids} = add_neighbours(Grid, G, Path, NewOpenGrids, VisitedGrids, HeuristicFun, Neighbours),
+            do_search(EndGrid, ValidFun, OpenGrids2, NewVisitedGrids, DirectionFun, HeuristicFun, MaxLimit - 1);
         empty ->
             none
     end;
-do_search(_EndGrid, _NeighbourFun, _OpenGrids, _VisitedGrids, _MaxLimit) ->
+do_search(_EndGrid, _ValidFun, _OpenGrids, _VisitedGrids, _DirectionFun, _HeuristicFun, _MaxLimit) ->
     max_limited.
 
 %%======================================
