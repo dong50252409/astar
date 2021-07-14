@@ -1,6 +1,6 @@
 -module(astar).
 
--compile([inline, inline_list_funcs]).
+-compile(inline).
 
 -export([search/4]).
 
@@ -38,12 +38,10 @@ heuristic_fun(6, {X1, Y1}) ->
         cube_distance(Cub1, Cub2)
     end;
 heuristic_fun(_, {X1, Y1}) ->
-    fun({X2, Y2}) ->
-        erlang:abs(X1 - X2) + erlang:abs(Y1 - Y2) end.
+    fun({X2, Y2}) -> erlang:abs(X1 - X2) + erlang:abs(Y1 - Y2) end.
 
 direction_fun(4) ->
-    fun(_) ->
-        [{-1, 0}, {0, -1}, {1, 0}, {0, 1}] end;
+    fun(_) -> [{-1, 0}, {0, -1}, {1, 0}, {0, 1}] end;
 direction_fun(6) ->
     fun
         (Y) when Y band 1 =:= 0 ->
@@ -52,8 +50,7 @@ direction_fun(6) ->
             [{-1, 0}, {-1, 1}, {0, 1}, {1, 0}, {0, -1}, {-1, -1}]
     end;
 direction_fun(8) ->
-    fun(_) ->
-        [{-1, 0}, {-1, -1}, {0, -1}, {1, -1}, {1, 0}, {1, 1}, {0, 1}, {-1, 1}] end.
+    fun(_) -> [{-1, 0}, {-1, -1}, {0, -1}, {1, -1}, {1, 0}, {1, 1}, {0, 1}, {-1, 1}] end.
 
 evenr_to_cube(Col, Row) ->
     X = Col - ((Row + (Row band 1)) bsr 1),
@@ -66,7 +63,7 @@ cube_distance({X1, Y1, Z1}, {X2, Y2, Z2}) ->
 
 get_neighbours(ValidFun, {X, Y} = CurGrid, VisitedGrids, [{DX, DY} | T]) ->
     NGrid = {X + DX, Y + DY},
-    case is_unvisited(NGrid, VisitedGrids) andalso ValidFun(NGrid)
+    case not maps:is_key(NGrid, VisitedGrids) andalso ValidFun(NGrid)
         andalso (DX =:= 0 orelse DY =:= 0 orelse (ValidFun({X + DX, Y}) orelse ValidFun({X, Y + DY}))) of
         true ->
             [NGrid | get_neighbours(ValidFun, CurGrid, VisitedGrids, T)];
@@ -92,14 +89,6 @@ g({_, Y}, {_, Y}) ->
 g(_, _) ->
     14.
 
-is_unvisited(Grid, VisitedGrids) ->
-    case VisitedGrids of
-        #{Grid := _} ->
-            false;
-        _ ->
-            true
-    end.
-
 push(Score, Grid, G, Path, OpenGrids) ->
     insert(Score, {Grid, G, Path}, OpenGrids).
 
@@ -110,7 +99,7 @@ do_search(EndGrid, ValidFun, OpenGrids, VisitedGrids, DirectionFun, HeuristicFun
         {{Grid, G, Path}, NewOpenGrids} ->
             Directions = DirectionFun(element(2, Grid)),
             Neighbours = get_neighbours(ValidFun, Grid, VisitedGrids, Directions),
-            {OpenGrids2, NewVisitedGrids} = add_neighbours(Grid, G, Path, NewOpenGrids, VisitedGrids, HeuristicFun, Neighbours),
+            {OpenGrids2, NewVisitedGrids} = add_neighbours(Grid, G, [Grid | Path], NewOpenGrids, VisitedGrids, HeuristicFun, Neighbours),
             do_search(EndGrid, ValidFun, OpenGrids2, NewVisitedGrids, DirectionFun, HeuristicFun, MaxLimit - 1);
         empty ->
             none
