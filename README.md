@@ -24,6 +24,3 @@ astar
     3> ValidFun = fun({X,Y}) -> not lists:member({X,Y}, BlockList) end.
     4> Options = [],
     5> {max, Path} = astar:search(StartGrid, EndGrid, ValidFun, Options).
-    6> lists:reverse(Path).
-    
-    
