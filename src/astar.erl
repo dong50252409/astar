@@ -23,7 +23,7 @@ search(StartGrid, EndGrid, ValidFun, Options) ->
     Direction = proplists:get_value(direction_type, Options, ?DIRECTION_TYPE),
     DirectionFun = direction_fun(Direction),
     HeuristicFun = heuristic_fun(Direction, StartGrid),
-    OpenGrids = push(0, StartGrid, 0, [], new()),
+    OpenGrids = insert(0, {StartGrid, 0, []}, new()),
     VisitedGrids = #{StartGrid => true},
     MaxLimit = proplists:get_value(max_limit, Options, ?MAX_LIMIT),
     do_search(EndGrid, ValidFun, OpenGrids, VisitedGrids, DirectionFun, HeuristicFun, MaxLimit).
@@ -76,7 +76,7 @@ get_neighbours(_ValidFun, _CurGrid, _VisitedGrids, []) ->
 add_neighbours(CurGrid, G, Path, OpenGrids, VisitedGrids, HeuristicFun, [NGrid | T]) ->
     G1 = G + g(CurGrid, NGrid),
     NewScore = G1 + HeuristicFun(NGrid),
-    OpenGrids1 = push(NewScore, NGrid, G1, Path, OpenGrids),
+    OpenGrids1 = insert(NewScore, {NGrid, G1, Path}, OpenGrids),
     VisitedGrids1 = VisitedGrids#{NGrid => true},
     add_neighbours(CurGrid, G, Path, OpenGrids1, VisitedGrids1, HeuristicFun, T);
 add_neighbours(_CurGrid, _G, _Path, OpenGrids, VisitedGrids, _HeuristicFun, []) ->
@@ -88,9 +88,6 @@ g({_, Y}, {_, Y}) ->
     10;
 g(_, _) ->
     14.
-
-push(Score, Grid, G, Path, OpenGrids) ->
-    insert(Score, {Grid, G, Path}, OpenGrids).
 
 do_search(EndGrid, ValidFun, OpenGrids, VisitedGrids, DirectionFun, HeuristicFun, MaxLimit) when MaxLimit > 0 ->
     case take_min(OpenGrids) of
