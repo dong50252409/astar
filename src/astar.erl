@@ -3,107 +3,70 @@
 -compile(inline).
 
 -export([search/4]).
+-export([is_unvisited/2]).
 
--define(DIRECTION_TYPE, 8).
--define(MAX_LIMIT, 16#FFFF).
+
+-export_type([grid/0, valid_fun/0, visited_grids/0]).
 
 -type grid() :: {integer(), integer()}.
 -type result() :: {max, Path :: [grid()]} | none| max_limited.
--type direction_type() :: {direction_type, 4, 6, 8}.
 -type max_limit() :: {max_limit, non_neg_integer()}.
--type option() :: direction_type() |max_limit().
+-type option() :: {astar_mod, module()} |max_limit().
 -type options() :: [option()].
+-type valid_fun() :: fun((CurGrid :: grid()) -> boolean()).
+-type visited_grids() :: #{Grid :: grid() => true}.
+
+-callback(get_neighbours(ValidFun :: valid_fun(), CurGrid :: grid(), VisitedGrids :: visited_grids()) -> Neighbours :: [grid()]).
+-callback(heuristic(Grid1 :: grid(), Grid2 :: grid()) -> H :: number()).
+-callback(distance(Grid1 :: grid(), Grid2 :: grid()) -> G :: number()).
+
+
+-define(MAX_LIMIT, 16#FFFF).
 
 -spec search(StartGrid, EndGrid, ValidFun, Options) -> Result when
     StartGrid :: grid(), EndGrid :: grid(),
-    ValidFun :: fun((CurGrid :: grid()) -> boolean()),
-    Options :: options(),
+    ValidFun :: valid_fun(), Options :: options(),
     Result :: result().
 search(StartGrid, EndGrid, ValidFun, Options) ->
-    Direction = proplists:get_value(direction_type, Options, ?DIRECTION_TYPE),
-    DirectionFun = direction_fun(Direction),
-    HeuristicFun = heuristic_fun(Direction, StartGrid),
     OpenGrids = insert(0, {StartGrid, 0, []}, new()),
-    VisitedGrids = #{StartGrid => true},
+    VisitedGrids = #{StartGrid => -1},
+    AStarMod = proplists:get_value(astar_mod, Options, astar_diagonally),
     MaxLimit = proplists:get_value(max_limit, Options, ?MAX_LIMIT),
-    do_search(EndGrid, ValidFun, OpenGrids, VisitedGrids, DirectionFun, HeuristicFun, MaxLimit).
+    do_search(EndGrid, ValidFun, OpenGrids, VisitedGrids, AStarMod, MaxLimit).
 
 %%=====================================================
 %% Internal Function
 %%=====================================================
-heuristic_fun(6, {X1, Y1}) ->
-    Cub1 = evenr_to_cube(X1, Y1),
-    fun({X2, Y2}) ->
-        Cub2 = evenr_to_cube(X2, Y2),
-        cube_distance(Cub1, Cub2)
-    end;
-heuristic_fun(_, {X1, Y1}) ->
-    fun({X2, Y2}) -> erlang:abs(X1 - X2) + erlang:abs(Y1 - Y2) end.
-
-direction_fun(4) ->
-    fun(_) -> [{-1, 0}, {0, -1}, {1, 0}, {0, 1}] end;
-direction_fun(6) ->
-    fun
-        (Y) when Y band 1 =:= 0 ->
-            [{-1, 0}, {0, 1}, {1, 1}, {1, 0}, {1, -1}, {0, -1}];
-        (_) ->
-            [{-1, 0}, {-1, 1}, {0, 1}, {1, 0}, {0, -1}, {-1, -1}]
-    end;
-direction_fun(8) ->
-    fun(_) -> [{-1, 0}, {-1, -1}, {0, -1}, {1, -1}, {1, 0}, {1, 1}, {0, 1}, {-1, 1}] end.
-
-evenr_to_cube(Col, Row) ->
-    X = Col - ((Row + (Row band 1)) bsr 1),
-    Z = Row,
-    Y = -X - Z,
-    {X, Y, Z}.
-
-cube_distance({X1, Y1, Z1}, {X2, Y2, Z2}) ->
-    erlang:max(erlang:abs(X1 - X2), erlang:max(erlang:abs(Y1 - Y2), erlang:abs(Z1 - Z2))).
-
-get_neighbours(ValidFun, {X, Y} = CurGrid, VisitedGrids, [{DX, DY} | T]) ->
-    NGrid = {X + DX, Y + DY},
-    case not maps:is_key(NGrid, VisitedGrids) andalso ValidFun(NGrid)
-        andalso (DX =:= 0 orelse DY =:= 0 orelse (ValidFun({X + DX, Y}) orelse ValidFun({X, Y + DY}))) of
-        true ->
-            [NGrid | get_neighbours(ValidFun, CurGrid, VisitedGrids, T)];
-        false ->
-            get_neighbours(ValidFun, CurGrid, VisitedGrids, T)
-    end;
-get_neighbours(_ValidFun, _CurGrid, _VisitedGrids, []) ->
-    [].
-
-add_neighbours(CurGrid, G, Path, OpenGrids, VisitedGrids, HeuristicFun, [NGrid | T]) ->
-    G1 = G + g(CurGrid, NGrid),
-    NewScore = G1 + HeuristicFun(NGrid),
-    OpenGrids1 = insert(NewScore, {NGrid, G1, Path}, OpenGrids),
-    VisitedGrids1 = VisitedGrids#{NGrid => true},
-    add_neighbours(CurGrid, G, Path, OpenGrids1, VisitedGrids1, HeuristicFun, T);
-add_neighbours(_CurGrid, _G, _Path, OpenGrids, VisitedGrids, _HeuristicFun, []) ->
-    {OpenGrids, VisitedGrids}.
-
-g({X, _}, {X, _}) ->
-    10;
-g({_, Y}, {_, Y}) ->
-    10;
-g(_, _) ->
-    14.
-
-do_search(EndGrid, ValidFun, OpenGrids, VisitedGrids, DirectionFun, HeuristicFun, MaxLimit) when MaxLimit > 0 ->
+do_search(EndGrid, ValidFun, OpenGrids, VisitedGrids, AStarMod, MaxLimit) when MaxLimit > 0 ->
     case take_min(OpenGrids) of
         {{EndGrid, _G, Path}, _NewOpenGrids} ->
             {max, erlang:tl(lists:reverse([EndGrid | Path]))};
         {{Grid, G, Path}, NewOpenGrids} ->
-            Directions = DirectionFun(element(2, Grid)),
-            Neighbours = get_neighbours(ValidFun, Grid, VisitedGrids, Directions),
-            {OpenGrids2, NewVisitedGrids} = add_neighbours(Grid, G, [Grid | Path], NewOpenGrids, VisitedGrids, HeuristicFun, Neighbours),
-            do_search(EndGrid, ValidFun, OpenGrids2, NewVisitedGrids, DirectionFun, HeuristicFun, MaxLimit - 1);
+%%            io:format("take_min: Grid:~w G:~w ~n", [Grid, G]),
+            Neighbours = AStarMod:get_neighbours(ValidFun, Grid, VisitedGrids),
+            {OpenGrids2, NewVisitedGrids} = add_neighbours(EndGrid, Grid, G, [Grid | Path], NewOpenGrids, VisitedGrids, AStarMod, Neighbours),
+            do_search(EndGrid, ValidFun, OpenGrids2, NewVisitedGrids, AStarMod, MaxLimit - 1);
         empty ->
             none
     end;
-do_search(_EndGrid, _ValidFun, _OpenGrids, _VisitedGrids, _DirectionFun, _HeuristicFun, _MaxLimit) ->
+do_search(_EndGrid, _ValidFun, _OpenGrids, _VisitedGrids, _AStarMod, _MaxLimit) ->
     max_limited.
 
+add_neighbours(EndGrid, ParentGrid, G, Path, OpenGrids, VisitedGrids, AStarMod, [NGrid | T]) ->
+    G1 = G + AStarMod:distance(ParentGrid, NGrid),
+    NewScore = G1 + AStarMod:heuristic(EndGrid, NGrid),
+    case VisitedGrids of
+        #{NGrid := OldScore} when OldScore =< NewScore ->
+            OpenGrids1 = OpenGrids,
+            VisitedGrids1 = VisitedGrids;
+        _ ->
+%%            io:format("add_neighbours: NGrid:~w Socre:~w H:~w G:~w G1:~w~n", [NGrid, NewScore, AStarMod:heuristic(EndGrid, NGrid), G, G1]),
+            OpenGrids1 = insert(NewScore, {NGrid, G1, Path}, OpenGrids),
+            VisitedGrids1 = VisitedGrids#{NGrid => NewScore}
+    end,
+    add_neighbours(EndGrid, ParentGrid, G, Path, OpenGrids1, VisitedGrids1, AStarMod, T);
+add_neighbours(_EndGrid, _CurGrid, _G, _Path, OpenGrids, VisitedGrids, _AStarMod, []) ->
+    {OpenGrids, VisitedGrids}.
 %%======================================
 %% pairs_heap implement
 %%======================================
@@ -133,3 +96,12 @@ merge_pairs([SubHeap]) ->
     SubHeap;
 merge_pairs([]) ->
     {}.
+
+-spec is_unvisited(Grid :: grid(), VisitedGrids :: visited_grids()) -> boolean().
+is_unvisited(Grid, VisitedGrids) ->
+    case VisitedGrids of
+        #{Grid := -1} ->
+            false;
+        _ ->
+            true
+    end.

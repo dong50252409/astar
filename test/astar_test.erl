@@ -29,7 +29,7 @@ pathfinder_1_test_() ->
             "                    ",
             "                    ",
             "           E        "
-        ], 15, [{direction_type, 4}]),
+        ], 15, [{astar_mod, astar_orthogonal}]),
         ?pathfinder_test([
             "   S                ",
             "       XXXXXXXXXXX  ",
@@ -37,7 +37,7 @@ pathfinder_1_test_() ->
             "                    ",
             "                    ",
             "           E        "
-        ], 12, [{direction_type, 6}]),
+        ], 12, [{astar_mod, astar_hexagonal}]),
         ?pathfinder_test([
             "   S                ",
             "       XXXXXXXXXXX  ",
@@ -45,7 +45,7 @@ pathfinder_1_test_() ->
             "                    ",
             "                    ",
             "           E        "
-        ], 11, [{direction_type, 8}]),
+        ], 11, [{astar_mod, astar_diagonally}]),
         ?pathfinder_test([
             "S                               X   XE  ",
             "XXXXXX XXXXXXXX XXXXXXXXXXXXXXXXX X XX  ",
@@ -67,7 +67,7 @@ pathfinder_1_test_() ->
             "  X                             X       ",
             "  XXXXXXXX                              ",
             "                                        "
-        ], 68, [{direction_type, 8}]),
+        ], 68, [{astar_mod, astar_diagonally}]),
         ?pathfinder_test([
             "                                                            ",
             " S  XXX                                                     ",
@@ -129,7 +129,7 @@ pathfinder_1_test_() ->
             "                                            X               ",
             "                                                          E ",
             "                                                            "
-        ], 97,[{direction_type, 8}])
+        ], 91, [{astar_mod, astar_diagonally}])
     ].
 
 run_pathfinder_test(WorldDiagram, ExpectedValue, Options) ->
@@ -143,9 +143,12 @@ run_pathfinder_test(WorldDiagram, ExpectedValue, Options) ->
         end,
     case astar:search(StartGrid, EndGrid, ValidFun, Options) of
         {max, Path} ->
+            ?debugFmt("ExpectedValue:~w, RealValue:~w Options:~w", [ExpectedValue, length(Path), Options]),
             drw_world(Path, World),
             ?assertMatch(ExpectedValue, length(Path));
         RealValue ->
+            ?debugFmt("ExpectedValue:~w, RealValue:~w Options:~w", [ExpectedValue, RealValue, Options]),
+            drw_world([], World),
             ?assertMatch(ExpectedValue, RealValue)
     end.
 
@@ -184,7 +187,7 @@ drw_world(Path, World) ->
 drw_world_1(Row, World) ->
     case World of
         #{Row := Col} ->
-            ?debugFmt("~s~n", [tuple_to_list(Col)]),
+            ?debugFmt("~s", [tuple_to_list(Col)]),
             drw_world_1(Row + 1, World);
         #{} ->
             ok
