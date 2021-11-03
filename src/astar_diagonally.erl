@@ -35,7 +35,7 @@ directions() ->
 
 -spec heuristic(Grid1 :: astar:grid(), Grid2 :: astar:grid()) -> float().
 heuristic(Grid1, Grid2) ->
-    astar_heuristic:manhattan(Grid1, Grid2).
+    astar_heuristic:chebyshev(Grid1, Grid2).
 
 -spec distance(Grid1 :: astar:grid(), Grid2 :: astar:grid()) -> number().
 distance({X, _}, {X, _}) ->
