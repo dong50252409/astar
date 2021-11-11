@@ -29,12 +29,7 @@ octile({X1, Y1}, {X2, Y2}) ->
     F = 0.4142135,
     DX = erlang:abs(X1 - X2),
     DY = erlang:abs(Y1 - Y2),
-    case DX < DY of
-        true ->
-            F * DX + DY;
-        false ->
-            F * DY + DX
-    end.
+    F * erlang:min(DX, DY) + erlang:max(DX, DY).
 
 -spec chebyshev(Grid1 :: astar:grid(), Grid2 :: astar:grid()) -> integer().
 chebyshev({X1, Y1}, {X2, Y2}) ->
