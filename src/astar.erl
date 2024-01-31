@@ -11,7 +11,7 @@
 -type grid() :: {integer(), integer()}.
 -type result() :: {max, Path :: [grid()]} | none| max_limited.
 -type max_limit() :: {max_limit, non_neg_integer()}.
--type option() :: {astar_mod, module()} |max_limit().
+-type option() :: max_limit()|{astar_mod, astar_quadrilaterall|astar_hexagonal|astar_polygonal}.
 -type options() :: [option()].
 -type valid_fun() :: fun((CurGrid :: grid()) -> boolean()).
 -type visited_grids() :: #{Grid :: grid() => true}.
@@ -30,7 +30,7 @@
 search(StartGrid, EndGrid, ValidFun, Options) ->
     OpenGrids = insert(0, {StartGrid, 0, []}, new()),
     VisitedGrids = #{StartGrid => -1},
-    AStarMod = proplists:get_value(astar_mod, Options, astar_diagonally),
+    AStarMod = proplists:get_value(astar_mod, Options, astar_polygonal),
     MaxLimit = proplists:get_value(max_limit, Options, ?MAX_LIMIT),
     do_search(EndGrid, ValidFun, OpenGrids, VisitedGrids, AStarMod, MaxLimit).
 
