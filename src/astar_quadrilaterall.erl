@@ -1,12 +1,12 @@
 %%%-------------------------------------------------------------------
-%%% @author gz1417
+%%% @author dy
 %%% @copyright (C) 2021, <COMPANY>
 %%% @doc
-%%% 4方向寻路
+%%% 四边形寻路
 %%% @end
 %%% Created : 29. 7月 2021 17:16
 %%%-------------------------------------------------------------------
--module(astar_orthogonal).
+-module(astar_quadrilaterall).
 -behavior(astar).
 
 %% API

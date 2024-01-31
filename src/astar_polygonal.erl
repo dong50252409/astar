@@ -1,12 +1,12 @@
 %%%-------------------------------------------------------------------
-%%% @author gz1417
+%%% @author dy
 %%% @copyright (C) 2021, <COMPANY>
 %%% @doc
-%%% 六边形寻路
+%%% 多边形寻路
 %%% @end
 %%% Created : 29. 7月 2021 16:56
 %%%-------------------------------------------------------------------
--module(astar_diagonally).
+-module(astar_polygonal).
 
 -behavior(astar).
 
@@ -35,7 +35,7 @@ directions() ->
 
 -spec heuristic(Grid1 :: astar:grid(), Grid2 :: astar:grid()) -> float().
 heuristic(Grid1, Grid2) ->
-    astar_heuristic:chebyshev(Grid1, Grid2).
+    astar_heuristic:octile(Grid1, Grid2).
 
 -spec distance(Grid1 :: astar:grid(), Grid2 :: astar:grid()) -> number().
 distance({X, _}, {X, _}) ->
