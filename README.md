@@ -1,9 +1,11 @@
 astar
 =====
 
-高性能A星算法实现，使用pairs_heap优化Open列表，去掉原有Closed列表改为Visited记录已经开启坐标，使用曼哈顿距离作为启发函数。
+高性能A星算法实现，使用pairs_heap优化Open列表，去掉原有Closed列表改为Visited记录已经开启坐标，并优化启发函数。
 
 支持 4、6（六边形）、8 方向寻路，支持限制最大搜索深度
+
+A High-Performance A* Pathfinding Algorithm Implemented in Pure Erlang
 
 构建 Build
 -----

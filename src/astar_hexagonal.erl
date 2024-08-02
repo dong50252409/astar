@@ -7,6 +7,7 @@
 %%% Created : 29. 7月 2021 17:22
 %%%-------------------------------------------------------------------
 -module(astar_hexagonal).
+
 -behavior(astar).
 
 %% API
@@ -35,7 +36,15 @@ directions(_) ->
 
 -spec heuristic(Grid1 :: astar:grid(), Grid2 :: astar:grid()) -> float().
 heuristic(Grid1, Grid2) ->
-    astar_heuristic:cube_chebyshev(Grid1, Grid2).
+    {X1, Y1, Z1} = evenr_to_cube(Grid1),
+    {X2, Y2, Z2} = evenr_to_cube(Grid2),
+    erlang:max(erlang:abs(X1 - X2), erlang:max(erlang:abs(Y1 - Y2), erlang:abs(Z1 - Z2))).
+
+evenr_to_cube({X, Y}) ->
+    DX = X - ((Y + (Y band 1)) bsr 1),
+    DZ = Y,
+    DY = -X - DZ,
+    {DX, DY, DZ}.
 
 -spec distance(Grid1 :: astar:grid(), Grid2 :: astar:grid()) -> 1.
 distance(_, _) ->

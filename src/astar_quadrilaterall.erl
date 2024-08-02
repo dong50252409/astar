@@ -7,6 +7,7 @@
 %%% Created : 29. 7月 2021 17:16
 %%%-------------------------------------------------------------------
 -module(astar_quadrilaterall).
+
 -behavior(astar).
 
 %% API
@@ -32,8 +33,8 @@ directions() ->
     [{-1, 0}, {0, -1}, {1, 0}, {0, 1}].
 
 -spec heuristic(Grid1 :: astar:grid(), Grid2 :: astar:grid()) -> integer().
-heuristic(Grid1, Grid2) ->
-    astar_heuristic:manhattan(Grid1, Grid2).
+heuristic({X1, Y1}, {X2, Y2}) ->
+    erlang:abs(X1 - X2) + erlang:abs(Y1 - Y2).
 
 -spec distance(Grid1 :: astar:grid(), Grid2 :: astar:grid()) -> 1.
 distance(_, _) ->
