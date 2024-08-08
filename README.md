@@ -25,4 +25,4 @@ A High-Performance A* Pathfinding Algorithm Implemented in Pure Erlang
     2> BlockList = [{47,1},{24,2}, {2,25}, {20,31}, {20,21}, {50,20}, ...].
     3> ValidFun = fun({X,Y}) -> not lists:member({X,Y}, BlockList) end.
     4> Options = [],
-    5> {max, Path} = astar:search(StartGrid, EndGrid, ValidFun, Options).
+    5> {ok, Path} = astar:search(StartGrid, EndGrid, ValidFun, Options).
