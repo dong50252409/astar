@@ -1,5 +1,5 @@
 {application, astar, [
-    {description, "A High-Performance A* Pathfinding Algorithm Implemented in Pure Erlang"},
+    {description, "A High-Performance A* Pathfinding Algorithm Implemented in Pure Erlang."},
     {vsn, "1.0.0"},
     {registered, []},
     {applications, [

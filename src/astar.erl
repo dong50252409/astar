@@ -9,7 +9,7 @@
 -export_type([grid/0, valid_fun/0, visited_grids/0]).
 
 -type grid() :: {integer(), integer()}.
--type result() :: {max, Path :: [grid()]} | none| max_limited.
+-type result() :: {ok, Path :: [grid()]} | none| max_limited.
 -type max_limit() :: {max_limit, non_neg_integer()}.
 -type option() :: max_limit()|{mod, astar_quadrilaterall|astar_hexagonal|astar_octagonal}.
 -type options() :: [option()].
@@ -40,7 +40,7 @@ search(StartGrid, EndGrid, ValidFun, Options) ->
 do_search(EndGrid, ValidFun, OpenGrids, VisitedGrids, AStarMod, MaxLimit) when MaxLimit > 0 ->
     case take_min(OpenGrids) of
         {{EndGrid, _G, Path}, _NewOpenGrids} ->
-            {max, erlang:tl(lists:reverse([EndGrid | Path]))};
+            {ok, erlang:tl(lists:reverse([EndGrid | Path]))};
         {{Grid, G, Path}, NewOpenGrids} ->
 %%            io:format("take_min: Grid:~w G:~w ~n", [Grid, G]),
             Neighbours = AStarMod:get_neighbours(ValidFun, Grid, VisitedGrids),

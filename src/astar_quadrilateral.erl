@@ -6,7 +6,7 @@
 %%% @end
 %%% Created : 29. 7月 2021 17:16
 %%%-------------------------------------------------------------------
--module(astar_quadrilaterall).
+-module(astar_quadrilateral).
 
 -behavior(astar).
 
